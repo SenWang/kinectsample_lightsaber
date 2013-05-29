@@ -1,0 +1,10 @@
+﻿<Window x:Class="WpfApplication1.ColorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ColorWindow" Width="640" Height="500">
+    <Canvas>
+        <Image x:Name="ColorData"/>
+        <Line x:Name="Lightsaber" X1="0" Y1="0" X2="0" Y2="0" 
+              Stroke="Red" StrokeThickness="10" Visibility="Collapsed"/>
+    </Canvas>
+</Window>
