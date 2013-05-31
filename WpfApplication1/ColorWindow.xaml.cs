@@ -11,6 +11,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using Microsoft.Kinect;
+using System.Windows.Media.Animation;
 
 namespace WpfApplication1
 {
@@ -68,55 +69,72 @@ namespace WpfApplication1
         {
             using (SkeletonFrame skframe = e.OpenSkeletonFrame())
             {
-                if (skframe != null)
-                {
-                    FrameSkeletons = new Skeleton[skframe.SkeletonArrayLength];
-                    skframe.CopySkeletonDataTo(FrameSkeletons);
-                    for (int i = 0; i < FrameSkeletons.Length; i++)
-                    {
-                        if (FrameSkeletons[i].TrackingState == SkeletonTrackingState.Tracked)
-                        {
-                            GestureDetection(FrameSkeletons[i]);
-                            ColorImagePoint cpl = MapToColorImage(FrameSkeletons[i].Joints[JointType.HandLeft]);
-                            ColorImagePoint cpr = MapToColorImage(FrameSkeletons[i].Joints[JointType.HandRight]);
-                            DrawLightsaber(cpl,cpr);                       
-                        }
-                    }
-                }
+                if (skframe == null)
+                    return;
+
+                FrameSkeletons = new Skeleton[skframe.SkeletonArrayLength];
+                skframe.CopySkeletonDataTo(FrameSkeletons);
+                Skeleton sk = (from s in FrameSkeletons
+                               where s.TrackingState == SkeletonTrackingState.Tracked
+                               select s).FirstOrDefault();
+
+                if (sk == null)
+                    return;
+
+                ColorImagePoint cphl = MapToColorImage(sk.Joints[JointType.HandLeft]);
+                ColorImagePoint cpwl = MapToColorImage(sk.Joints[JointType.WristLeft]);
+                GestureConfirm(sk);
+                DrawLightsaber(cphl,cpwl);                       
+
             }
         }
-        void GestureDetection(Skeleton skeleton)
-        {
-            Joint jhl = skeleton.Joints[JointType.HandLeft];
-            Joint jhr = skeleton.Joints[JointType.HandRight];
-            if (Distance(jhl, jhr) < 0.2)
-                Lightsaber.Visibility = Visibility.Visible;
-            else
-                Lightsaber.Visibility = Visibility.Collapsed;
 
-        }
-        double Distance(Joint p1, Joint p2)
+        void GestureConfirm(Skeleton sk)
         {
-            double dist = 0;
-            dist = Math.Sqrt(Math.Pow(p2.Position.X - p1.Position.X, 2) + Math.Pow(p2.Position.Y - p1.Position.Y, 2));
-            return dist;
+            float handheight = sk.Joints[JointType.HandLeft].Position.Y;
+            float headheight = sk.Joints[JointType.Head].Position.Y;
+            if (handheight > headheight)
+                BeginLengthAnimation();
         }
+
         ColorImagePoint MapToColorImage(Joint jp)
         {
-            ColorImagePoint cp = kinect.MapSkeletonPointToColor(jp.Position, kinect.ColorStream.Format);
+            ColorImagePoint cp = kinect.CoordinateMapper.MapSkeletonPointToColorPoint(jp.Position, kinect.ColorStream.Format);
             return cp ;
         }
-        void DrawLightsaber(ColorImagePoint cpl, ColorImagePoint cpr)
-        {
-            Lightsaber.X1 = cpl.X;
-            Lightsaber.Y1 = cpl.Y;
 
-            double dist = Math.Sqrt(Math.Pow(cpr.X - cpl.X, 2) + Math.Pow(cpr.Y - cpl.Y, 2));
-            double length = 200; //光劍長度
+        public int Length
+        {
+            get { return (int)GetValue(LengthProperty); }
+            set { SetValue(LengthProperty, value); }
+        }
+
+        public static readonly DependencyProperty LengthProperty =
+            DependencyProperty.Register("Length", typeof(int), typeof(ColorWindow), new PropertyMetadata(0));
+
+        private void BeginLengthAnimation()
+        {
+            Int32Animation lenani = new Int32Animation();
+            lenani.From = 0;
+            lenani.To = 200;
+            lenani.Duration = new Duration(TimeSpan.Parse("0:0:6"));
+            this.BeginAnimation(ColorWindow.LengthProperty, lenani);
+        }
+
+        
+        void DrawLightsaber(ColorImagePoint h, ColorImagePoint w)
+        {
+            Lightsaber.X1 = h.X;
+            Lightsaber.Y1 = h.Y;
+            LightsaberAngle.CenterX = h.X ;
+            LightsaberAngle.CenterY = h.Y ; 
+
+            double dist = Math.Sqrt(Math.Pow(w.X - h.X, 2) + Math.Pow(w.Y - h.Y, 2));
+            
             if (dist > 0)
             {
-                Lightsaber.X2 = (length / dist) * (cpr.X - cpl.X) + cpl.X;
-                Lightsaber.Y2 = (length / dist) * (cpr.Y - cpl.Y) + cpl.Y;
+                Lightsaber.X2 = (Length / dist) * (h.X - w.X) + h.X;
+                Lightsaber.Y2 = (Length / dist) * (h.Y - w.Y) + h.Y;         
             }
         }
 

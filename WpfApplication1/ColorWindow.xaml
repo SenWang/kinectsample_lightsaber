@@ -5,6 +5,10 @@
     <Canvas>
         <Image x:Name="ColorData"/>
         <Line x:Name="Lightsaber" X1="0" Y1="0" X2="0" Y2="0" 
-              Stroke="Red" StrokeThickness="10" Visibility="Collapsed"/>
+              Stroke="Red" StrokeThickness="10">
+            <Line.RenderTransform>
+                <RotateTransform x:Name="LightsaberAngle" Angle="90"/>
+            </Line.RenderTransform>
+        </Line>
     </Canvas>
 </Window>
